@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pixel Runner - Kaung Htet Mobile</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; font-family: Arial; background: #cceeff; }
+    canvas { display: block; margin: auto; background: #87cefa; }
+    #watermark {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      text-shadow: 1px 1px 2px black;
+    }
+  </style>
+</head>
+<body>
+  <div id="watermark">Kaung Htet Mobile</div>
+  <canvas id="game" width="600" height="300"></canvas>
+  <audio id="jumpSound" src="https://www.soundjay.com/button/sounds/button-16.mp3"></audio>
+  <audio id="gameOverSound" src="https://www.soundjay.com/button/sounds/button-10.mp3"></audio>
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    let player = { x: 50, y: 240, w: 30, h: 30, vy: 0, gravity: 1.2, jumpPower: -15 };
+    let ground = 270;
+    let obstacles = [];
+    let score = 0;
+    let gameOver = false;
+
+    const jumpSound = document.getElementById("jumpSound");
+    const gameOverSound = document.getElementById("gameOverSound");
+
+    function drawPlayer() {
+      ctx.fillStyle = "#ff4444";
+      ctx.fillRect(player.x, player.y, player.w, player.h);
+    }
+
+    function drawObstacle(obs) {
+      ctx.fillStyle = "#5555ff";
+      ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+    }
+
+    function update() {
+      if (gameOver) return;
+      player.y += player.vy;
+      player.vy += player.gravity;
+
+      if (player.y > ground) {
+        player.y = ground;
+        player.vy = 0;
+      }
+
+      for (let obs of obstacles) {
+        obs.x -= 5;
+        if (
+          player.x < obs.x + obs.w &&
+          player.x + player.w > obs.x &&
+          player.y < obs.y + obs.h &&
+          player.y + player.h > obs.y
+        ) {
+          gameOver = true;
+          gameOverSound.play();
+        }
+      }
+
+      if (obstacles.length === 0 || obstacles[obstacles.length - 1].x < 400) {
+        const height = 30 + Math.random() * 50;
+        obstacles.push({ x: canvas.width, y: ground + player.h - height, w: 20, h: height });
+      }
+
+      obstacles = obstacles.filter(o => o.x + o.w > 0);
+      score++;
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawPlayer();
+      for (let obs of obstacles) drawObstacle(obs);
+
+      ctx.fillStyle = "black";
+      ctx.font = "20px Arial";
+      ctx.fillText("Score: " + score, 10, 25);
+
+      if (gameOver) {
+        ctx.fillStyle = "rgba(0,0,0,0.7)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "white";
+        ctx.font = "30px Arial";
+        ctx.fillText("Game Over", 220, 140);
+        ctx.font = "20px Arial";
+        ctx.fillText("Final Score: " + score, 235, 180);
+      }
+    }
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    function jump() {
+      if (!gameOver && player.y >= ground) {
+        player.vy = player.jumpPower;
+        jumpSound.play();
+      } else if (gameOver) {
+        location.reload();
+      }
+    }
+
+    // Control: click/tap or spacebar
+    canvas.addEventListener("click", jump);
+    window.addEventListener("keydown", e => {
+      if (e.code === "Space") jump();
+    });
+
+    loop();
+  </script>
+</body>
+</html>
